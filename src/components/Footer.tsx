@@ -7,6 +7,7 @@ import {
   MapPin,
   Phone
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import logo from "@/assets/logo.png";
 
 const Footer = () => {
@@ -24,6 +25,12 @@ const Footer = () => {
     { label: "Early Access", href: "#early-access" },
   ];
 
+  const accountLinks = [
+    { label: "Sign Up", href: "/signup", isExternal: false },
+    { label: "Login", href: "/login", isExternal: false },
+    { label: "Admin Portal", href: "/admin/login", isExternal: false },
+  ];
+
   const legalLinks = [
     { label: "Privacy Policy", href: "#" },
     { label: "Terms of Service", href: "#" },
@@ -37,19 +44,17 @@ const Footer = () => {
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8">
             {/* Company Info */}
-            <div className="md:col-span-2">
+            <div className="md:col-span-1">
               <div className="flex items-center gap-3 mb-6">
                 <img src={logo} alt="Sociovia Technologies" className="h-12 w-auto" />
                 <div>
-                  <h3 className="text-xl font-bold">Sociovia Technologies</h3>
-                  <p className="text-secondary-foreground/70 text-sm">Private Limited</p>
+                  <h3 className="text-xl font-bold">Sociovia</h3>
+                  <p className="text-secondary-foreground/70 text-sm">Technologies Pvt Ltd</p>
                 </div>
               </div>
               
-              <p className="text-secondary-foreground/80 leading-relaxed mb-6 max-w-md">
-                Revolutionizing small business marketing with AI-powered automation. 
-                Build, optimize, and scale your business effortlessly with our 
-                cutting-edge platform.
+              <p className="text-secondary-foreground/80 leading-relaxed mb-6">
+                Revolutionizing small business marketing with AI-powered automation.
               </p>
               
               {/* Contact Info */}
@@ -81,6 +86,32 @@ const Footer = () => {
                     >
                       {link.label}
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Account */}
+            <div>
+              <h4 className="font-bold text-lg mb-6">Account</h4>
+              <ul className="space-y-3">
+                {accountLinks.map((link, index) => (
+                  <li key={index}>
+                    {link.isExternal === false ? (
+                      <Link 
+                        to={link.href}
+                        className="text-secondary-foreground/70 hover:text-accent transition-smooth hover:translate-x-1 inline-block"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : (
+                      <a 
+                        href={link.href}
+                        className="text-secondary-foreground/70 hover:text-accent transition-smooth hover:translate-x-1 inline-block"
+                      >
+                        {link.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>

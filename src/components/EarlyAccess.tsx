@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Mail, Send, CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
 const EarlyAccess = () => {
@@ -88,10 +89,12 @@ const EarlyAccess = () => {
                     />
                   </div>
                   
-                  <Button type="submit" variant="cta" size="lg" className="w-full h-14 text-lg rounded-2xl">
-                    <Send className="w-5 h-5 mr-2" />
-                    Join the Waitlist
-                  </Button>
+                  <Link to="/signup" className="block">
+                    <Button type="button" variant="cta" size="lg" className="w-full h-14 text-lg rounded-2xl">
+                      <Send className="w-5 h-5 mr-2" />
+                      Join the Waitlist
+                    </Button>
+                  </Link>
                 </form>
 
                 {/* Trust Indicators */}

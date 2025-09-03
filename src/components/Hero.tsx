@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 import logo from "@/assets/logo.png";
 
@@ -55,10 +56,12 @@ const Hero = () => {
         
         {/* CTA Button */}
         <div className="animate-slide-up">
-          <Button variant="hero" size="lg" className="text-lg px-8 py-4 h-auto">
-            Get Early Access
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
+          <Link to="/signup">
+            <Button variant="hero" size="lg" className="text-lg px-8 py-4 h-auto">
+              Get Early Access
+              <ArrowRight className="w-5 h-5 ml-2" />
+            </Button>
+          </Link>
         </div>
         
         {/* Stats or Social Proof */}
