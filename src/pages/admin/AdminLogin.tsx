@@ -30,26 +30,28 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("password", formData.password);
-
-      const response = await fetch('/admin/login', {
-        method: 'POST',
-        body: formDataToSend,
+      const response = await fetch("http://127.0.0.1:5000/api/admin/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        credentials: "include", // so Flask sessions/cookies work
+        body: JSON.stringify(formData)
       });
 
-      if (response.redirected || response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         toast({
           title: "Admin access granted 🔐",
-          description: "Welcome to the admin dashboard.",
+          description: "Welcome to the admin dashboard."
         });
-        navigate('/admin/review');
+        navigate("/admin/review");
       } else {
-        setError("Invalid admin credentials");
+        setError(data.error || "Invalid admin credentials");
       }
     } catch (error) {
-      console.error('Admin login error:', error);
+      console.error("Admin login error:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);

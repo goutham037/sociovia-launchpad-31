@@ -41,27 +41,27 @@ const VerifyEmail = () => {
     setError("");
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("code", formData.code);
-
-      const response = await fetch('/verify-email', {
-        method: 'POST',
-        body: formDataToSend,
+      const response = await fetch("http://127.0.0.1:5000/api/verify-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json", // ✅ Send JSON
+        },
+        body: JSON.stringify(formData),
       });
 
-      if (response.redirected || response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
           title: "Email verified successfully! ✅",
           description: "Your account is now under review.",
         });
-        navigate('/under-review');
+        navigate("/under-review");
       } else {
-        const text = await response.text();
-        setError("Invalid verification code or email");
+        setError(result.error || "Invalid verification code or email");
       }
     } catch (error) {
-      console.error('Verification error:', error);
+      console.error("Verification error:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -78,25 +78,27 @@ const VerifyEmail = () => {
     setError("");
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("email", formData.email);
-
-      const response = await fetch('/resend-code', {
-        method: 'POST',
-        body: formDataToSend,
+      const response = await fetch("http://127.0.0.1:5000/api/resend-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json", // ✅ Send JSON
+        },
+        body: JSON.stringify({ email: formData.email }),
       });
 
-      if (response.ok) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
           title: "Code resent! 📧",
           description: "Check your email for the new verification code.",
         });
         setCountdown(60); // 60 second cooldown
       } else {
-        setError("Failed to resend code. Please try again.");
+        setError(result.error || "Failed to resend code. Please try again.");
       }
     } catch (error) {
-      console.error('Resend error:', error);
+      console.error("Resend error:", error);
       setError("An error occurred while resending code.");
     } finally {
       setResending(false);
@@ -184,7 +186,7 @@ const VerifyEmail = () => {
                   disabled={resending || countdown > 0}
                   className="w-full"
                 >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${resending ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 mr-2 ${resending ? "animate-spin" : ""}`} />
                   {countdown > 0 ? `Resend in ${countdown}s` : resending ? "Sending..." : "Resend Code"}
                 </Button>
               </div>

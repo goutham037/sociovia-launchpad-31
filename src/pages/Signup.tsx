@@ -35,41 +35,37 @@ const Signup = () => {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors([]);
+  e.preventDefault();
+  setLoading(true);
+  setErrors([]);
 
-    try {
-      const formDataToSend = new FormData();
-      Object.entries(formData).forEach(([key, value]) => {
-        formDataToSend.append(key, value);
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",  // ✅ tell Flask we’re sending JSON
+      },
+      body: JSON.stringify(formData),       // ✅ send JSON, not FormData
+    });
+
+    const result = await response.json();
+
+    if (response.ok && result.success) {
+      toast({
+        title: "Account created successfully! 🎉",
+        description: "Please check your email for verification code.",
       });
-
-      const response = await fetch('/signup', {
-        method: 'POST',
-        body: formDataToSend,
-      });
-
-      if (response.redirected) {
-        // If redirected to verify-email, show success and navigate
-        toast({
-          title: "Account created successfully! 🎉",
-          description: "Please check your email for verification code.",
-        });
-        navigate('/verify-email');
-      } else {
-        // Parse any errors from the response
-        const text = await response.text();
-        // This would typically contain flash messages in a real implementation
-        setErrors(["Please check your form and try again"]);
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      setErrors(["An error occurred. Please try again."]);
-    } finally {
-      setLoading(false);
+      navigate("/verify-email");
+    } else {
+      setErrors(result.errors || [result.error || "Something went wrong"]);
     }
-  };
+  } catch (error) {
+    console.error("Signup error:", error);
+    setErrors(["An error occurred. Please try again."]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

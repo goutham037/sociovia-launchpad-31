@@ -1,19 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
-  Users, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Mail, 
-  Building, 
-  Briefcase, 
+import {
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Mail,
+  Building,
+  Briefcase,
   Phone,
   Calendar,
   LogOut,
@@ -24,90 +24,102 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
-// Mock data - in real app this would come from API
-const mockPendingUsers = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john@marketingpro.com",
-    phone: "+1 (555) 123-4567",
-    business_name: "Marketing Pro Agency",
-    industry: "Marketing",
-    created_at: "2024-01-20T10:30:00Z",
-    status: "under_review"
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah@techstartup.io",
-    phone: "+1 (555) 987-6543",
-    business_name: "TechStartup Solutions",
-    industry: "Technology",
-    created_at: "2024-01-20T14:15:00Z",
-    status: "under_review"
-  },
-  {
-    id: 3,
-    name: "Michael Chen",
-    email: "m.chen@healthcare-plus.com",
-    phone: "",
-    business_name: "Healthcare Plus",
-    industry: "Healthcare",
-    created_at: "2024-01-21T09:00:00Z",
-    status: "under_review"
-  }
-];
+type PendingUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  business_name?: string;
+  industry?: string;
+  created_at: string;
+  status: string;
+  rejection_reason?: string | null;
+};
 
 const AdminReview = () => {
-  const [pendingUsers, setPendingUsers] = useState(mockPendingUsers);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogout = async () => {
+  useEffect(() => {
+    fetchPendingUsers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ✅ Fetch pending users with hardcoded login
+  const fetchPendingUsers = async () => {
     try {
-      const response = await fetch('/admin/logout');
-      if (response.ok) {
+      const res = await fetch("http://127.0.0.1:5000/api/admin/review", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "admin@sociovia.com",
+          password: "admin123",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingUsers(data.users || []);
+      } else {
         toast({
-          title: "Logged out successfully",
-          description: "Admin session ended.",
+          title: "Failed to load users",
+          description: data.error || "Check your admin credentials.",
+          variant: "destructive",
         });
-        navigate('/admin/login');
+        navigate("/admin/login");
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/admin/login');
+    } catch (err) {
+      console.error("Failed to fetch pending users:", err);
+      toast({
+        title: "Error",
+        description: "Could not fetch pending users.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleApprove = async (userId: number) => {
     setLoading(true);
     try {
-      const response = await fetch(`/admin/approve/${userId}`, {
-        method: 'POST',
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/approve/${userId}`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "admin@sociovia.com",
+          password: "admin123",
+        }),
       });
 
-      if (response.ok) {
-        setPendingUsers(users => users.filter(user => user.id !== userId));
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingUsers(users => users.filter(u => u.id !== userId));
         toast({
           title: "User approved! ✅",
-          description: "The user has been notified and can now access their dashboard.",
+          description: "The user has been notified.",
         });
       } else {
         toast({
           title: "Approval failed",
-          description: "There was an error approving this user.",
-          variant: "destructive"
+          description: data.error || "Error approving user.",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Approval error:', error);
+      console.error("Approval error:", error);
       toast({
         title: "Error",
         description: "An error occurred while approving the user.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -119,293 +131,221 @@ const AdminReview = () => {
       toast({
         title: "Rejection reason required",
         description: "Please provide a reason for rejection.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append("reason", reason);
-
-      const response = await fetch(`/admin/reject/${userId}`, {
-        method: 'POST',
-        body: formData,
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/reject/${userId}`, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "admin@sociovia.com",
+          password: "admin123",
+          reason,
+        }),
       });
 
-      if (response.ok) {
-        setPendingUsers(users => users.filter(user => user.id !== userId));
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setPendingUsers(users => users.filter(u => u.id !== userId));
         setSelectedUser(null);
         setRejectionReason("");
         toast({
           title: "User rejected",
-          description: "The user has been notified of the rejection.",
+          description: "The user has been notified.",
         });
       } else {
         toast({
           title: "Rejection failed",
-          description: "There was an error rejecting this user.",
-          variant: "destructive"
+          description: data.error || "Error rejecting user.",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Rejection error:', error);
+      console.error("Rejection error:", error);
       toast({
         title: "Error",
         description: "An error occurred while rejecting the user.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString();
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();
     const date = new Date(dateString);
     const hours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (hours < 1) return "Less than 1 hour ago";
     if (hours === 1) return "1 hour ago";
     if (hours < 24) return `${hours} hours ago`;
-    
+
     const days = Math.floor(hours / 24);
-    if (days === 1) return "1 day ago";
-    return `${days} days ago`;
+    return days === 1 ? "1 day ago" : `${days} days ago`;
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card shadow-soft">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={logo} alt="Sociovia" className="h-8 w-auto" />
-              <Separator orientation="vertical" className="h-6" />
-              <div className="flex items-center gap-2">
-                <Shield className="w-5 h-5 text-primary" />
-                <div>
-                  <h1 className="text-xl font-bold text-secondary">Admin Dashboard</h1>
-                  <p className="text-sm text-muted-foreground">User Review Panel</p>
-                </div>
-              </div>
-            </div>
-            
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+      <header className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-center space-x-2">
+          <img src={logo} alt="Sociovia Logo" className="h-8" />
+          <h1 className="text-xl font-bold">Admin Dashboard</h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          <Shield className="h-5 w-5 text-muted-foreground" />
+          <Button
+            onClick={() => navigate("/admin/login")}
+            variant="ghost"
+            className="flex items-center space-x-2"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </Button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Pending Reviews</p>
-                  <p className="text-2xl font-bold text-secondary">{pendingUsers.length}</p>
-                </div>
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
+      {/* Main Content */}
+      <main className="p-6">
+        <h2 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+          <Users className="h-5 w-5" />
+          <span>Pending User Approvals</span>
+        </h2>
+
+        {pendingUsers.length === 0 ? (
+          <Card className="p-6 text-center text-muted-foreground">
+            <p>No pending users for review 🎉</p>
           </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pendingUsers.map((user) => (
+              <Card key={user.id} className="shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <span>{user.name}</span>
+                    <Badge variant="outline">{user.status}</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                    <Mail className="h-4 w-4" />
+                    <span>{user.email}</span>
+                  </div>
+                  {user.phone && (
+                    <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                      <Phone className="h-4 w-4" />
+                      <span>{user.phone}</span>
+                    </div>
+                  )}
+                  {user.business_name && (
+                    <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                      <Building className="h-4 w-4" />
+                      <span>{user.business_name}</span>
+                    </div>
+                  )}
+                  {user.industry && (
+                    <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                      <Briefcase className="h-4 w-4" />
+                      <span>{user.industry}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                    <Calendar className="h-4 w-4" />
+                    <span>{formatDate(user.created_at)}</span>
+                  </div>
+                  <div className="flex items-center text-sm text-muted-foreground space-x-2">
+                    <Clock className="h-4 w-4" />
+                    <span>{getTimeAgo(user.created_at)}</span>
+                  </div>
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Users</p>
-                  <p className="text-2xl font-bold text-secondary">47</p>
-                </div>
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                  <Users className="w-6 h-6 text-accent" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  <Separator className="my-2" />
 
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">Approved Today</p>
-                  <p className="text-2xl font-bold text-secondary">5</p>
-                </div>
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      disabled={loading}
+                      onClick={() => handleApprove(user.id)}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Approve
+                    </Button>
 
-        {/* Pending Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-primary" />
-              Pending User Reviews
-            </CardTitle>
-            <CardDescription>
-              Users waiting for account approval ({pendingUsers.length} total)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingUsers.length === 0 ? (
-              <div className="text-center py-12">
-                <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-secondary mb-2">All caught up!</h3>
-                <p className="text-muted-foreground">No pending user reviews at the moment.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {pendingUsers.map((user) => (
-                  <Card key={user.id} className="border border-primary/20">
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-3 flex-1">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                              <Users className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                              <h3 className="font-semibold text-secondary">{user.name}</h3>
-                              <p className="text-sm text-muted-foreground">{getTimeAgo(user.created_at)}</p>
-                            </div>
-                            <Badge variant="secondary" className="bg-primary/10 text-primary">
-                              Under Review
-                            </Badge>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                            <div className="flex items-center gap-2">
-                              <Mail className="w-4 h-4 text-muted-foreground" />
-                              <span>{user.email}</span>
-                            </div>
-                            {user.phone && (
-                              <div className="flex items-center gap-2">
-                                <Phone className="w-4 h-4 text-muted-foreground" />
-                                <span>{user.phone}</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2">
-                              <Building className="w-4 h-4 text-muted-foreground" />
-                              <span>{user.business_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Briefcase className="w-4 h-4 text-muted-foreground" />
-                              <span>{user.industry}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            <span>Submitted: {formatDate(user.created_at)}</span>
-                          </div>
+                    <Dialog
+                      open={selectedUser?.id === user.id}
+                      onOpenChange={() => setSelectedUser(user)}
+                    >
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="destructive">
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Reject User</DialogTitle>
+                          <DialogDescription>
+                            Provide a reason for rejecting <strong>{user.name}</strong>.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                          <Label htmlFor="reason">Rejection Reason</Label>
+                          <Textarea
+                            id="reason"
+                            placeholder="Enter reason..."
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                          />
                         </div>
-
-                        <div className="flex items-center gap-2 ml-4">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Eye className="w-4 h-4 mr-2" />
-                                Review
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Review User Application</DialogTitle>
-                                <DialogDescription>
-                                  Review the user details and decide whether to approve or reject their application.
-                                </DialogDescription>
-                              </DialogHeader>
-                              
-                              <div className="space-y-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div>
-                                    <Label className="text-sm font-medium">Full Name</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{user.name}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Email Address</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{user.email}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Business Name</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{user.business_name}</p>
-                                  </div>
-                                  <div>
-                                    <Label className="text-sm font-medium">Industry</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{user.industry}</p>
-                                  </div>
-                                  {user.phone && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Phone</Label>
-                                      <p className="text-sm text-muted-foreground mt-1">{user.phone}</p>
-                                    </div>
-                                  )}
-                                  <div>
-                                    <Label className="text-sm font-medium">Application Date</Label>
-                                    <p className="text-sm text-muted-foreground mt-1">{formatDate(user.created_at)}</p>
-                                  </div>
-                                </div>
-
-                                <Separator />
-
-                                <div className="space-y-4">
-                                  <Label className="text-sm font-medium">Rejection Reason (if rejecting)</Label>
-                                  <Textarea
-                                    placeholder="Enter reason for rejection (optional if approving)"
-                                    value={rejectionReason}
-                                    onChange={(e) => setRejectionReason(e.target.value)}
-                                    rows={3}
-                                  />
-                                </div>
-
-                                <div className="flex gap-3 justify-end">
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => handleReject(user.id, rejectionReason)}
-                                    disabled={loading}
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <XCircle className="w-4 h-4 mr-2" />
-                                    Reject
-                                  </Button>
-                                  <Button
-                                    onClick={() => handleApprove(user.id)}
-                                    disabled={loading}
-                                    className="bg-green-600 hover:bg-green-700 text-white"
-                                  >
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Approve
-                                  </Button>
-                                </div>
-                              </div>
-                            </DialogContent>
-                          </Dialog>
+                        <div className="flex justify-end space-x-2 mt-4">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedUser(null);
+                              setRejectionReason("");
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() =>
+                              handleReject(user.id, rejectionReason)
+                            }
+                            disabled={loading}
+                          >
+                            Reject
+                          </Button>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setSelectedUser(user)}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
     </div>
   );
 };

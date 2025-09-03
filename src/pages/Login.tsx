@@ -9,6 +9,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
+const API_BASE = "http://127.0.0.1:5000/api"; // centralize API base
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: "",
@@ -30,46 +32,50 @@ const Login = () => {
     setError("");
 
     try {
-      const formDataToSend = new FormData();
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("password", formData.password);
-
-      const response = await fetch('/login', {
-        method: 'POST',
-        body: formDataToSend,
+      const response = await fetch(`${API_BASE}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+        credentials: "include",
       });
 
-      if (response.redirected || response.ok) {
-        // Check the redirect URL to determine where to go
-        const url = response.url;
-        
-        if (url.includes('/dashboard')) {
-          toast({
-            title: "Welcome back! 🎉",
-            description: "Successfully logged in to your dashboard.",
-          });
-          navigate('/dashboard');
-        } else if (url.includes('/verify-email')) {
-          toast({
-            title: "Email verification required",
-            description: "Please verify your email first.",
-            variant: "default"
-          });
-          navigate('/verify-email');
-        } else if (url.includes('/under-review')) {
-          toast({
-            title: "Account under review",
-            description: "Your account is still being reviewed.",
-            variant: "default"
-          });
-          navigate('/under-review');
-        }
+      const data = await response.json();
+      console.log("Login response:", data);
+
+      if (response.ok && data.success) {
+        // ✅ Login success
+        toast({
+          title: "Welcome back! 🎉",
+          description: "Successfully logged in.",
+        });
+        navigate("/dashboard");
+      } else if (response.status === 403 && data.status === "under_review") {
+        // 🚨 Account under review
+        toast({
+          title: "Account under review",
+          description: "Your account is still being reviewed.",
+          variant: "default",
+        });
+        navigate("/under-review");
+      } else if (response.status === 403 && data.status === "pending_verification") {
+        // 🚨 Needs email verification
+        toast({
+          title: "Email verification required",
+          description: "Please verify your email to continue.",
+          variant: "default",
+        });
+        navigate("/verify-email");
       } else {
-        const text = await response.text();
-        setError("Invalid email or password");
+        // ❌ General error
+        setError(data.error || "Invalid email or password");
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
@@ -149,7 +155,7 @@ const Login = () => {
                   </Link>
                 </p>
               </div>
-              
+
               <div className="text-center">
                 <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   ← Back to Home
