@@ -32,7 +32,7 @@ type UserModel = {
   last_login?: string;
 };
 
-const API_ME = "http://127.0.0.1:5000/api/me";
+const API_ME = "https://sociovia-py.onrender.com/api/me";
 
 const Dashboard = (): JSX.Element => {
   const [user, setUser] = useState<UserModel | null>(null);
@@ -108,7 +108,7 @@ const Dashboard = (): JSX.Element => {
   const handleLogout = async () => {
     try {
       // optional server logout (ignore failure)
-      await fetch("http://127.0.0.1:5000/api/logout", {
+      await fetch("https://sociovia-py.onrender.com/api/logout", {
         method: "POST",
         credentials: "include",
       }).catch(() => {});

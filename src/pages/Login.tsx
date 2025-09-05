@@ -9,7 +9,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
-const API_BASE = "http://127.0.0.1:5000/api"; // centralize API base
+const API_BASE = "https://sociovia-py.onrender.com/api"; // centralize API base
 
 const Login = () => {
   const [formData, setFormData] = useState({

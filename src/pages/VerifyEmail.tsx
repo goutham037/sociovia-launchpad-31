@@ -41,7 +41,7 @@ const VerifyEmail = () => {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/verify-email", {
+      const response = await fetch("https://sociovia-py.onrender.com/api/verify-email", {
         method: "POST",
         headers: {
           "Content-Type": "application/json", // ✅ Send JSON
@@ -78,7 +78,7 @@ const VerifyEmail = () => {
     setError("");
 
     try {
-      const response = await fetch("http://127.0.0.1:5000/api/resend-code", {
+      const response = await fetch("https://sociovia-py.onrender.com/api/resend-code", {
         method: "POST",
         headers: {
           "Content-Type": "application/json", // ✅ Send JSON

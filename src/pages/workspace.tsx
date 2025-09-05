@@ -48,7 +48,7 @@ export default function Workspace() {
       try {
         // Fetch workspace details
         const res1 = await fetch(
-          `http://127.0.0.1:5000/api/workspace/me?user_id=${user.id}`
+          `https://sociovia-py.onrender.com/api/workspace/me?user_id=${user.id}`
         );
         const data1 = await res1.json();
         console.log("Workspace data:", data1);
@@ -56,7 +56,7 @@ export default function Workspace() {
 
         // Fetch caps
         const res2 = await fetch(
-          `http://127.0.0.1:5000/api/workspace/caps?user_id=${user.id}`
+          `https://sociovia-py.onrender.com/api/workspace/caps?user_id=${user.id}`
         );
         const data2 = await res2.json();
         if (data2.success) setCaps(data2.caps);

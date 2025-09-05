@@ -5,8 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 
 type AdAccount = { id: string; name: string; connected_at?: string };
 
-const API_LIST = "http://127.0.0.1:5000/api/workspace/ad-accounts";
-const API_CONNECT = "http://127.0.0.1:5000/api/workspace/ad-accounts/connect";
+const API_LIST = "https://sociovia-py.onrender.com/api/workspace/ad-accounts";
+const API_CONNECT = "https://sociovia-py.onrender.com/api/workspace/ad-accounts/connect";
 
 const AdAccounts = (): JSX.Element => {
   const [accounts, setAccounts] = useState<AdAccount[]>([]);

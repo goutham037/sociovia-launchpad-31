@@ -7,9 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 
 type Member = { id: number; name: string; email: string; role: string };
 
-const API_LIST = "http://127.0.0.1:5000/api/workspace/users";
-const API_INVITE = "http://127.0.0.1:5000/api/workspace/invite";
-const API_REMOVE = (id: number) => `http://127.0.0.1:5000/api/workspace/users/${id}`;
+const API_LIST = "https://sociovia-py.onrender.com/api/workspace/users";
+const API_INVITE = "https://sociovia-py.onrender.com/api/workspace/invite";
+const API_REMOVE = (id: number) => `https://sociovia-py.onrender.com/api/workspace/users/${id}`;
 
 const UserManagement = (): JSX.Element => {
   const [members, setMembers] = useState<Member[]>([]);

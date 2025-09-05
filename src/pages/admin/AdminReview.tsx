@@ -52,7 +52,7 @@ const AdminReview = () => {
   // ✅ Fetch pending users with hardcoded login
   const fetchPendingUsers = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:5000/api/admin/review", {
+      const res = await fetch("https://sociovia-py.onrender.com/api/admin/review", {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -88,7 +88,7 @@ const AdminReview = () => {
   const handleApprove = async (userId: number) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://127.0.0.1:5000/api/admin/approve/${userId}`, {
+      const res = await fetch(`https://sociovia-py.onrender.com/api/admin/approve/${userId}`, {
         method: "POST",
         headers: {
           "Accept": "application/json",

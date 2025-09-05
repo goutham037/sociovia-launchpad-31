@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 
-const API = "http://127.0.0.1:5000/api/workspace/setup";
+const API = "https://sociovia-py.onrender.com/api/workspace/setup";
 const businessTypes = ["Pvt Ltd", "Sole Proprietorship", "Partnership", "Public"];
 
 const WorkspaceSetup = (): JSX.Element => {

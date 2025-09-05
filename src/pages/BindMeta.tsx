@@ -59,7 +59,7 @@ export type MemberPermissions = {
 // Helpers
 // =============================================
 const fetchJSON = async <T,>(url: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch("http://127.0.0.1:5000" + url, {
+  const res = await fetch("https://sociovia-py.onrender.com" + url, {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     ...init,
