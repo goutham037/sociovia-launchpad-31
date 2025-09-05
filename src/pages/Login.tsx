@@ -53,6 +53,9 @@ const Login = () => {
           title: "Welcome back! 🎉",
           description: "Successfully logged in.",
         });
+      
+  localStorage.setItem("sv_user", JSON.stringify(data.user)); // <- store it
+
         navigate("/dashboard");
       } else if (response.status === 403 && data.status === "under_review") {
         // 🚨 Account under review

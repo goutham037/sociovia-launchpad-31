@@ -136,9 +136,8 @@ const AdminLogin = () => {
 
             <div className="mt-4 p-3 bg-muted/20 rounded-lg">
               <p className="text-xs text-muted-foreground text-center">
-                <strong>Default Admin:</strong><br />
-                Email: admin@sociovia.com<br />
-                Password: admin123
+                <strong>.</strong><br />
+                For admin access, please contact Sociovia support at <a href="mailto:support@sociovia.com">support@sociovia.com</a>
               </p>
             </div>
           </CardContent>

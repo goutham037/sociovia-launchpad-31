@@ -1,314 +1,330 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  User, 
-  Building, 
-  Mail, 
-  Phone, 
-  Briefcase, 
-  LogOut, 
+import {
+  User,
   Settings,
   BarChart3,
   Target,
   Users,
   Zap,
   TrendingUp,
-  Calendar,
-  Bell
+  Bell,
+  Link as LinkIcon,
+  Key,
+  LogOut,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import logo from "@/assets/logo.png";
 
-// Mock user data - in real app this would come from API
-const mockUser = {
-  name: "John Smith",
-  email: "john@example.com", 
-  phone: "+1 (555) 123-4567",
-  business_name: "Smith Marketing Agency",
-  industry: "Marketing",
-  status: "approved",
-  created_at: "2024-01-15",
-  last_login: new Date().toISOString()
+type UserModel = {
+  id?: number;
+  name: string;
+  email: string;
+  phone?: string;
+  business_name?: string;
+  industry?: string;
+  status?: string;
+  created_at?: string;
+  last_login?: string;
 };
 
-const Dashboard = () => {
-  const [user, setUser] = useState(mockUser);
+const API_ME = "http://127.0.0.1:5000/api/me";
+
+const Dashboard = (): JSX.Element => {
+  const [user, setUser] = useState<UserModel | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [binding, setBinding] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch('/logout');
-      if (response.ok) {
-        toast({
-          title: "Logged out successfully",
-          description: "See you next time!",
-        });
-        navigate('/login');
+  // Try local cache first (prototype-friendly), fallback to API
+  useEffect(() => {
+    const load = async () => {
+      setLoadingUser(true);
+
+      // 1) local cache (fast)
+      const cached = localStorage.getItem("sv_user");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached) as UserModel;
+          setUser(parsed);
+          setLoadingUser(false);
+          return;
+        } catch (err) {
+          console.warn("Failed to parse cached user, clearing cache", err);
+          localStorage.removeItem("sv_user");
+        }
       }
-    } catch (error) {
-      console.error('Logout error:', error);
-      // Fallback - still navigate to login
-      navigate('/login');
+
+      // 2) fallback: call API
+      try {
+        const res = await fetch(API_ME, { credentials: "include" });
+        if (res.status === 401) {
+          // server says unauthorized — go to login
+          navigate("/login");
+          return;
+        }
+        if (!res.ok) throw new Error("Failed to fetch user");
+        let data: any = null;
+        try { data = await res.json(); } catch (err) { /* non-json */ }
+        const u = data?.user ?? data;
+        if (u) {
+          setUser(u);
+          // also cache for prototyping convenience
+          try { localStorage.setItem("sv_user", JSON.stringify(u)); } catch {}
+        } else {
+          navigate("/login");
+        }
+      } catch (err) {
+        console.error("Error loading user", err);
+        navigate("/login"); // safe fallback
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+
+    load();
+  }, [navigate]);
+
+  const handleBindMeta = async () => {
+    setBinding(true);
+    try {
+      toast({ title: "Bind Meta Business", description: "Start Meta binding flow (placeholder)." });
+      // placeholder behavior — implement flow later
+      setTimeout(() => toast({ title: "Bind started", description: "Follow the Meta flow to complete." }), 600);
+    } catch {
+      toast({ title: "Failed", description: "Could not start binding flow", variant: "destructive" });
+    } finally {
+      setBinding(false);
     }
   };
 
-  const stats = [
-    {
-      title: "Active Campaigns",
-      value: "3",
-      icon: Target,
-      color: "text-primary",
-      bgColor: "bg-primary/10"
-    },
-    {
-      title: "Total Leads",
-      value: "127",
-      icon: Users,
-      color: "text-accent",
-      bgColor: "bg-accent/10"
-    },
-    {
-      title: "Conversion Rate",
-      value: "24.5%",
-      icon: TrendingUp,
-      color: "text-green-600",
-      bgColor: "bg-green-100"
-    },
-    {
-      title: "Monthly ROI",
-      value: "340%",
-      icon: BarChart3,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100"
-    }
-  ];
+  const handleManageUsers = () => navigate("/workspace/users");
 
-  const quickActions = [
-    {
-      title: "Create Campaign",
-      description: "Launch a new AI-powered marketing campaign",
-      icon: Zap,
-      action: () => toast({ title: "Feature coming soon!", description: "Campaign creation will be available in the full release." })
-    },
-    {
-      title: "View Analytics",
-      description: "Check your performance metrics and insights",
-      icon: BarChart3,
-      action: () => toast({ title: "Feature coming soon!", description: "Analytics dashboard will be available in the full release." })
-    },
-    {
-      title: "Manage Leads",
-      description: "Review and organize your customer leads",
-      icon: Users,
-      action: () => toast({ title: "Feature coming soon!", description: "Lead management will be available in the full release." })
+  const handleLogout = async () => {
+    try {
+      // optional server logout (ignore failure)
+      await fetch("http://127.0.0.1:5000/api/logout", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {});
+    } catch {
+      /* ignore */
+    } finally {
+      // clear local cache used for prototype
+      localStorage.removeItem("sv_user");
+      navigate("/login");
     }
+  };
+
+  if (loadingUser) {
+    return <div className="p-8 text-center text-muted-foreground">Loading dashboard...</div>;
+  }
+
+  if (!user) {
+    return <div className="p-8 text-center text-destructive">No user data available.</div>;
+  }
+
+  const stats = [
+    { title: "Active Campaigns", value: "3", icon: Target, hint: "Live campaigns" },
+    { title: "Total Leads", value: "127", icon: Users, hint: "Collected leads" },
+    { title: "Conversion Rate", value: "24.5%", icon: TrendingUp, hint: "Average" },
+    { title: "Monthly ROI", value: "340%", icon: BarChart3, hint: "Performance" },
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-soft">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src={logo} alt="Sociovia" className="h-8 w-auto" />
-              <Separator orientation="vertical" className="h-6" />
-              <div>
-                <h1 className="text-xl font-bold text-secondary">Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Welcome back, {user.name}</p>
-              </div>
+      {/* HEADER */}
+      <header className="border-b bg-card shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <img src={logo} alt="Sociovia" className="h-8 w-auto" />
+            <div>
+              <h1 className="text-lg font-semibold text-secondary">Dashboard</h1>
+              <p className="text-xs text-muted-foreground">Manage your workspace & accounts</p>
             </div>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-primary/10 text-primary">
-                <Zap className="w-3 h-3 mr-1" />
-                Pro Account
-              </Badge>
-              <Button variant="ghost" size="sm">
-                <Bell className="w-4 h-4" />
-              </Button>
-              <Button variant="ghost" size="sm">
-                <Settings className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Badge className="bg-primary/10 text-primary">
+              Workspace • {user.business_name ?? "—"}
+            </Badge>
+            <Button variant="ghost" size="sm" onClick={() => toast({ title: "Notifications", description: "No new notifications" })}>
+              <Bell className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />Sign out
+            </Button>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
-        {/* Welcome Section */}
-        <div className="primary-gradient p-1 rounded-2xl">
-          <div className="bg-background rounded-2xl p-6">
-            <div className="flex items-center justify-between">
+      {/* MAIN */}
+      <main className="max-w-7xl mx-auto p-6 grid gap-8 lg:grid-cols-3">
+        {/* Left: Welcome + Stats */}
+        <section className="lg:col-span-2 space-y-6">
+          <Card className="border-0 shadow-md">
+            <CardContent className="flex items-center justify-between gap-6 p-6">
               <div>
-                <h2 className="text-2xl font-bold text-secondary mb-2">
-                  Welcome to Sociovia, {user.name}! 🎉
-                </h2>
-                <p className="text-muted-foreground">
-                  Your AI-powered marketing automation platform is ready. Start creating campaigns and managing leads effortlessly.
+                <h2 className="text-2xl font-bold text-secondary">Welcome back, {user.name}.</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Manage campaigns, connect your Meta Business account, and control user permissions from here.
                 </p>
-              </div>
-              <div className="text-right">
-                <div className="text-sm text-muted-foreground">Last login</div>
-                <div className="font-medium">{new Date(user.last_login).toLocaleDateString()}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <Card key={index} className="border-2 border-primary/10">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                    <p className="text-2xl font-bold text-secondary">{stat.value}</p>
-                  </div>
-                  <div className={`w-12 h-12 rounded-full ${stat.bgColor} flex items-center justify-center`}>
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
+                <div className="flex items-center gap-3 mt-4">
+                  <Button onClick={() => navigate("/workspace/setup")} variant="cta">
+                    <Zap className="h-4 w-4 mr-2" />Workspace Setup
+                  </Button>
+                  <Button onClick={() => navigate("/workspace/bind-meta")} variant="cta" >
+                    <LinkIcon className="h-4 w-4 mr-2" />Bind Meta Business
+                  </Button>
+                  <Button onClick={handleManageUsers} variant="ghost">
+                    <Key className="h-4 w-4 mr-2" />User & Permissions
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-primary" />
-                  Quick Actions
-                </CardTitle>
-                <CardDescription>
-                  Get started with these essential features
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {quickActions.map((action, index) => (
-                  <div
-                    key={index}
-                    onClick={action.action}
-                    className="flex items-center gap-4 p-4 border border-primary/20 rounded-lg hover:bg-primary/5 cursor-pointer transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                      <action.icon className="w-5 h-5 text-primary" />
+              <div className="hidden md:flex flex-col items-end text-right">
+                <div className="text-xs text-muted-foreground">Last login</div>
+                <div className="font-medium">
+                  {new Date(user.last_login ?? user.created_at ?? Date.now()).toLocaleString()}
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">Status</div>
+                <div className="mt-1">
+                  <Badge className={`px-3 py-1 ${user.status === "approved" ? "bg-green-50 text-green-700" : "bg-yellow-50 text-amber-700"}`}>
+                    {user.status ?? "unknown"}
+                  </Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stats grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {stats.map((s) => {
+              const Icon = s.icon;
+              return (
+                <Card key={s.title} className="border-0 shadow-sm">
+                  <CardContent className="p-5 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">{s.title}</p>
+                      <p className="text-xl font-semibold text-secondary mt-1">{s.value}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{s.hint}</p>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-medium text-secondary">{action.title}</h3>
-                      <p className="text-sm text-muted-foreground">{action.description}</p>
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Icon className="w-5 h-5 text-primary" />
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
-          {/* Account Info */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5 text-primary" />
-                  Account Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{user.name}</p>
-                      <p className="text-xs text-muted-foreground">Account Owner</p>
-                    </div>
+          {/* Workspace & Ads */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="p-5">
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Workspace & Ads Setup
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-lg bg-muted/20">
+                  <div className="text-sm font-medium">Bind Meta</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Connect your Meta Business Manager to serve ads and sync inventories.
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">Primary Email</p>
-                    </div>
-                  </div>
-
-                  {user.phone && (
-                    <div className="flex items-center gap-3">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium text-sm">{user.phone}</p>
-                        <p className="text-xs text-muted-foreground">Phone Number</p>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3">
-                    <Building className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{user.business_name}</p>
-                      <p className="text-xs text-muted-foreground">Business Name</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Briefcase className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{user.industry}</p>
-                      <p className="text-xs text-muted-foreground">Industry</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <div>
-                      <p className="font-medium text-sm">{new Date(user.created_at).toLocaleDateString()}</p>
-                      <p className="text-xs text-muted-foreground">Member Since</p>
-                    </div>
+                  <div className="mt-3">
+                    <Button onClick={handleBindMeta} className="w-full" variant="cta">Bind Meta</Button>
                   </div>
                 </div>
+                <div className="p-4 rounded-lg bg-muted/20">
+                  <div className="text-sm font-medium">User & Permission Management</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Invite teammates and assign granular roles (Admin, Manager, Analyst).
+                  </div>
+                  <div className="mt-3">
+                    <Button onClick={handleManageUsers} className="w-full" variant="outline">Manage Users</Button>
+                  </div>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/20">
+                  <div className="text-sm font-medium">Ad Accounts & Pixels</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Link ad accounts and pixels to track conversions and audiences.
+                  </div>
+                  <div className="mt-3">
+                    <Button onClick={() => navigate("/workspace/ad-accounts")} className="w-full" variant="ghost">
+                      Manage Ad Accounts
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <Separator />
+              <div className="text-sm text-muted-foreground">
+                Pro tip: Bind your Meta Business account first so we can automatically suggest audience segments and creatives.
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-                <Button variant="outline" size="sm" className="w-full mt-4">
+        {/* Right: Account details */}
+        <aside className="space-y-6">
+          <Card className="sticky top-6 border-0 shadow-sm">
+            <CardHeader className="p-5">
+              <CardTitle className="flex items-center gap-2">
+                <User className="w-5 h-5 text-primary" />
+                Account
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-3">
+              <div className="text-sm text-muted-foreground">Owner</div>
+              <div className="font-medium">{user.name}</div>
+              <div className="mt-3 text-sm text-muted-foreground">Email</div>
+              <div className="font-medium">{user.email}</div>
+              {user.phone && (
+                <>
+                  <div className="mt-3 text-sm text-muted-foreground">Phone</div>
+                  <div className="font-medium">{user.phone}</div>
+                </>
+              )}
+              <div className="mt-3 text-sm text-muted-foreground">Business</div>
+              <div className="font-medium">{user.business_name ?? "—"}</div>
+              <div className="text-xs text-muted-foreground">{user.industry ?? "—"}</div>
+              <div className="mt-4">
+                <Button onClick={() => navigate("/settings/profile")} size="sm" variant="outline" className="w-full">
                   <Settings className="w-4 h-4 mr-2" />
-                  Edit Profile
+                  Edit profile
                 </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Coming Soon Notice */}
-        <Card className="border-2 border-accent/20">
-          <CardContent className="p-6 text-center">
-            <div className="w-16 h-16 accent-gradient rounded-full flex items-center justify-center mx-auto mb-4">
-              <Zap className="w-8 h-8 text-accent-foreground" />
-            </div>
-            <h3 className="text-xl font-bold text-secondary mb-2">
-              Full Platform Launching Soon! 🚀
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              This is a preview of your dashboard. The complete AI-powered marketing automation platform 
-              will be available when Sociovia officially launches in 2025.
-            </p>
-            <Link to="/">
-              <Button variant="accent">
-                Learn More About Sociovia
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          {/* Team preview */}
+          <Card className="border-0 shadow-sm">
+            <CardHeader className="p-5">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                Team & Permissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 space-y-3">
+              <div className="text-sm text-muted-foreground">Invite team members and give roles.</div>
+              <div className="mt-3">
+                <Button onClick={handleManageUsers} size="sm" className="w-full">
+                  Manage team & permissions
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
+      </main>
     </div>
   );
 };
